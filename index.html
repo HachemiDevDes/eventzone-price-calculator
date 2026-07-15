@@ -1720,21 +1720,21 @@
             <!-- Client details -->
             <div class="field-group">
               <label style="font-size: 12px; margin-bottom: 4px;">Nom du Client</label>
-              <input type="text" id="clientName" value="Client Algérie Spa" placeholder="Nom de l'entreprise ou client" oninput="updateDocDetails()">
+              <input type="text" id="clientName" value="" placeholder="Nom de l'entreprise ou client" oninput="updateDocDetails()">
             </div>
             <div class="field-group">
               <label style="font-size: 12px; margin-bottom: 4px;">Adresse du Client</label>
-              <input type="text" id="clientAddress" value="Kouba, Alger" placeholder="Adresse du client" oninput="updateDocDetails()">
+              <input type="text" id="clientAddress" value="" placeholder="Adresse du client" oninput="updateDocDetails()">
             </div>
             <div class="field-group">
               <label style="font-size: 12px; margin-bottom: 4px;">Téléphone / Email du Client</label>
-              <input type="text" id="clientContact" value="contact@client.dz" placeholder="Téléphone ou email du client" oninput="updateDocDetails()">
+              <input type="text" id="clientContact" value="" placeholder="Téléphone ou email du client" oninput="updateDocDetails()">
             </div>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
               <div class="field-group">
                 <label style="font-size: 12px; margin-bottom: 4px;">N° Document</label>
-                <input type="text" id="docNumber" value="DZ-2026-001" placeholder="Ex: DE-2026-04" oninput="updateDocDetails()">
+                <input type="text" id="docNumber" value="" placeholder="Ex: DE-2026-04" oninput="updateDocDetails()">
               </div>
               <div class="field-group">
                 <label style="font-size: 12px; margin-bottom: 4px;">Date d'émission</label>
@@ -1753,7 +1753,7 @@
 
             <div class="field-group" id="bankDetailsGroup" style="display: none;">
               <label style="font-size: 12px; margin-bottom: 4px;">Coordonnées Bancaires (RIB / CCP)</label>
-              <textarea id="docBankDetails" rows="2" placeholder="RIB: 00799999000000000000000 (Example Bank)" oninput="updateDocDetails()" style="width: 100%; padding: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: monospace; outline: none; resize: vertical;">RIB: 002 00080 0802200163 12 (BNA Kouba)</textarea>
+              <textarea id="docBankDetails" rows="2" placeholder="RIB: 002 00080 0802200163 12 (BNA Kouba)" oninput="updateDocDetails()" style="width: 100%; padding: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: monospace; outline: none; resize: vertical;"></textarea>
             </div>
 
           </div>
@@ -1770,14 +1770,14 @@
           <div class="doc-info-block">
             <div class="doc-info-section">
               <div class="doc-info-title">Informations Client</div>
-              <div class="doc-info-row"><strong>Client:</strong> <span id="lblClientName">Client Algérie Spa</span></div>
-              <div class="doc-info-row"><strong>Adresse:</strong> <span id="lblClientAddress">Kouba, Alger</span></div>
-              <div class="doc-info-row"><strong>Contact:</strong> <span id="lblClientContact">contact@client.dz</span></div>
+              <div class="doc-info-row"><strong>Client:</strong> <span id="lblClientName"></span></div>
+              <div class="doc-info-row"><strong>Adresse:</strong> <span id="lblClientAddress"></span></div>
+              <div class="doc-info-row"><strong>Contact:</strong> <span id="lblClientContact"></span></div>
             </div>
             <div class="doc-info-section">
               <div class="doc-info-title">Détails Document</div>
-              <div class="doc-info-row"><strong>N°:</strong> <span id="lblDocNumber">DZ-2026-001</span></div>
-              <div class="doc-info-row"><strong>Date:</strong> <span id="lblDocDate">15/07/2026</span></div>
+              <div class="doc-info-row"><strong>N°:</strong> <span id="lblDocNumber"></span></div>
+              <div class="doc-info-row"><strong>Date:</strong> <span id="lblDocDate"></span></div>
               <div class="doc-info-row"><strong>Règlement:</strong> <span id="lblDocPaymentMethod">Virement Bancaire</span></div>
             </div>
           </div>
@@ -1952,7 +1952,7 @@
             <div class="divider"></div>
             <div style="font-size: 11px; color: var(--text-muted); text-align: left;">
               <strong>Coordonnées Bancaires (RIB):</strong><br>
-              <span id="lblBankDetails" style="font-family: monospace; font-size: 11px; color: var(--text); word-break: break-all;">RIB: 002 00080 0802200163 12 (BNA Kouba)</span>
+              <span id="lblBankDetails" style="font-family: monospace; font-size: 11px; color: var(--text); word-break: break-all;"></span>
             </div>
           </div>
         </div>
@@ -2113,7 +2113,6 @@
     function applyTranslations() {
       const t = translations[currentLang];
       document.getElementById('txtTitle').innerHTML = t.title;
-      document.getElementById('txtPrintTitle').textContent = t.printTitle;
       document.getElementById('txtSubtitle').textContent = t.subtitle;
       document.getElementById('viewClient').textContent = t.viewClient;
       document.getElementById('viewInternal').textContent = t.viewInternal;
@@ -2332,15 +2331,27 @@
 
       const t = translations[currentLang];
       
-      const printTitleText = currentDocType === 'devis' 
-        ? (currentLang === 'EN' ? 'Quote' : 'Devis')
-        : (currentLang === 'EN' ? 'Invoice' : 'Facture');
+      const printTitleText = currentDocType === 'devis' ? 'Devis' : 'Facture';
       document.getElementById('txtPrintTitle').textContent = printTitleText;
 
       const summaryTitleText = currentDocType === 'devis'
-        ? t.summaryTitle
+        ? (currentLang === 'EN' ? 'Quote Summary' : 'Récapitulatif du Devis')
         : (currentLang === 'EN' ? 'Invoice Summary' : 'Récapitulatif de la Facture');
       document.getElementById('txtSummaryTitle').textContent = summaryTitleText;
+
+      // Update print button text dynamically
+      const btnPrint = document.getElementById('btnPrint');
+      if (btnPrint) {
+        if (currentDocType === 'devis') {
+          btnPrint.innerHTML = currentLang === 'EN' 
+            ? '<span>🖨️</span> Print / Save Devis as PDF' 
+            : '<span>🖨️</span> Imprimer / Enregistrer le Devis en PDF';
+        } else {
+          btnPrint.innerHTML = currentLang === 'EN' 
+            ? '<span>🖨️</span> Print / Save Facture as PDF' 
+            : '<span>🖨️</span> Imprimer / Enregistrer la Facture en PDF';
+        }
+      }
     }
 
     function toggleLogistics() {
