@@ -682,6 +682,72 @@
       color: var(--text);
     }
 
+    /* DOCUMENT SELECTOR & INFO */
+    .doc-type-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .doc-type-table td {
+      padding: 10px;
+      text-align: center;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: var(--text-muted);
+      width: 50%;
+      border: none;
+    }
+
+    .doc-type-table td.active {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .doc-info-block {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: var(--surface2);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .doc-info-section {
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .doc-info-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--blue);
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 4px;
+    }
+
+    .doc-info-row {
+      color: var(--text-sub);
+    }
+
+    .doc-info-row strong {
+      color: var(--text);
+    }
+    
+    body.light-mode .doc-info-block {
+      background: #f4f6fc;
+    }
+
     .divider {
       height: 1px;
       background: var(--border);
@@ -1038,6 +1104,30 @@
 
       .discount-line span:last-child {
         color: #1a9e6a !important;
+      }
+
+      .doc-info-block {
+        background: #f8faff !important;
+        border: 1px solid #e0e4ef !important;
+        padding: 12px !important;
+        margin-bottom: 16px !important;
+      }
+
+      .doc-info-row {
+        color: #333 !important;
+      }
+
+      .doc-info-row strong {
+        color: #000 !important;
+      }
+
+      .doc-info-title {
+        color: #2B7FFF !important;
+        border-color: #dde2ef !important;
+      }
+
+      .bank-details-block {
+        page-break-inside: avoid;
       }
 
       .fields-grid input,
@@ -1614,12 +1704,83 @@
           </div>
         </div>
 
+        <!-- CLIENT & DOCUMENT DETAILS -->
+        <div class="card no-print">
+          <div class="card-title">📄 Informations Document & Client</div>
+          
+          <!-- Document Type Switch Table -->
+          <table class="doc-type-table">
+            <tr>
+              <td id="toggleDevis" class="active" onclick="setDocType('devis')">Devis</td>
+              <td id="toggleFacture" onclick="setDocType('facture')">Facture</td>
+            </tr>
+          </table>
+
+          <div class="fields-grid" style="grid-template-columns: 1fr; gap: 12px;">
+            <!-- Client details -->
+            <div class="field-group">
+              <label style="font-size: 12px; margin-bottom: 4px;">Nom du Client</label>
+              <input type="text" id="clientName" value="Client Algérie Spa" placeholder="Nom de l'entreprise ou client" oninput="updateDocDetails()">
+            </div>
+            <div class="field-group">
+              <label style="font-size: 12px; margin-bottom: 4px;">Adresse du Client</label>
+              <input type="text" id="clientAddress" value="Kouba, Alger" placeholder="Adresse du client" oninput="updateDocDetails()">
+            </div>
+            <div class="field-group">
+              <label style="font-size: 12px; margin-bottom: 4px;">Téléphone / Email du Client</label>
+              <input type="text" id="clientContact" value="contact@client.dz" placeholder="Téléphone ou email du client" oninput="updateDocDetails()">
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="field-group">
+                <label style="font-size: 12px; margin-bottom: 4px;">N° Document</label>
+                <input type="text" id="docNumber" value="DZ-2026-001" placeholder="Ex: DE-2026-04" oninput="updateDocDetails()">
+              </div>
+              <div class="field-group">
+                <label style="font-size: 12px; margin-bottom: 4px;">Date d'émission</label>
+                <input type="date" id="docDate" oninput="updateDocDetails()">
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label style="font-size: 12px; margin-bottom: 4px;">Mode de Règlement</label>
+              <select id="docPaymentMethod" onchange="updateDocDetails()" style="width: 100%; padding: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); outline: none;">
+                <option value="Virement Bancaire">Virement Bancaire</option>
+                <option value="Chèque">Chèque</option>
+                <option value="Espèces">Espèces</option>
+              </select>
+            </div>
+
+            <div class="field-group" id="bankDetailsGroup" style="display: none;">
+              <label style="font-size: 12px; margin-bottom: 4px;">Coordonnées Bancaires (RIB / CCP)</label>
+              <textarea id="docBankDetails" rows="2" placeholder="RIB: 00799999000000000000000 (Example Bank)" oninput="updateDocDetails()" style="width: 100%; padding: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: monospace; outline: none; resize: vertical;">RIB: 002 00080 0802200163 12 (BNA Kouba)</textarea>
+            </div>
+
+          </div>
+        </div>
+
       </div> <!-- end .main-left -->
 
       <div class="main-right">
         <!-- SUMMARY -->
         <div class="summary-card">
           <div class="summary-title" id="txtSummaryTitle">Quote Summary</div>
+
+          <!-- Document & Client Info Display Grid -->
+          <div class="doc-info-block">
+            <div class="doc-info-section">
+              <div class="doc-info-title">Informations Client</div>
+              <div class="doc-info-row"><strong>Client:</strong> <span id="lblClientName">Client Algérie Spa</span></div>
+              <div class="doc-info-row"><strong>Adresse:</strong> <span id="lblClientAddress">Kouba, Alger</span></div>
+              <div class="doc-info-row"><strong>Contact:</strong> <span id="lblClientContact">contact@client.dz</span></div>
+            </div>
+            <div class="doc-info-section">
+              <div class="doc-info-title">Détails Document</div>
+              <div class="doc-info-row"><strong>N°:</strong> <span id="lblDocNumber">DZ-2026-001</span></div>
+              <div class="doc-info-row"><strong>Date:</strong> <span id="lblDocDate">15/07/2026</span></div>
+              <div class="doc-info-row"><strong>Règlement:</strong> <span id="lblDocPaymentMethod">Virement Bancaire</span></div>
+            </div>
+          </div>
 
           <div class="line-items">
             <div class="line-item" id="liAttendees">
@@ -1785,6 +1946,15 @@
             </div>
             <div class="profit-value" id="valProfit">0 DZD</div>
           </div>
+
+          <!-- Bank Details Block (only shown for Facture) -->
+          <div class="bank-details-block" id="bankDetailsBlock" style="display: none; margin-top: 16px;">
+            <div class="divider"></div>
+            <div style="font-size: 11px; color: var(--text-muted); text-align: left;">
+              <strong>Coordonnées Bancaires (RIB):</strong><br>
+              <span id="lblBankDetails" style="font-family: monospace; font-size: 11px; color: var(--text); word-break: break-all;">RIB: 002 00080 0802200163 12 (BNA Kouba)</span>
+            </div>
+          </div>
         </div>
 
         <!-- PRINT BUTTON -->
@@ -1801,6 +1971,7 @@
     // ── CONFIG & STATE ──────────────────────────────────────
     let currentView = 'client';
     let currentLang = 'EN';
+    let currentDocType = 'devis';
 
     const translations = {
       EN: {
@@ -2120,8 +2291,56 @@
       document.getElementById('valMeals').value = log.meals;
       
       document.getElementById('logisticsContent').classList.toggle('show', log.isRemote);
-
       update();
+    }
+
+    function setDocType(type) {
+      currentDocType = type;
+      document.getElementById('toggleDevis').classList.toggle('active', type === 'devis');
+      document.getElementById('toggleFacture').classList.toggle('active', type === 'facture');
+      
+      document.getElementById('bankDetailsGroup').style.display = type === 'facture' ? 'block' : 'none';
+      document.getElementById('bankDetailsBlock').style.display = type === 'facture' ? 'block' : 'none';
+      
+      update();
+    }
+
+    function updateDocDetails() {
+      const name = document.getElementById('clientName').value || '—';
+      const address = document.getElementById('clientAddress').value || '—';
+      const contact = document.getElementById('clientContact').value || '—';
+      const num = document.getElementById('docNumber').value || '—';
+      const dateVal = document.getElementById('docDate').value || '—';
+      const pay = document.getElementById('docPaymentMethod').value || '—';
+      const bank = document.getElementById('docBankDetails').value || '—';
+
+      document.getElementById('lblClientName').textContent = name;
+      document.getElementById('lblClientAddress').textContent = address;
+      document.getElementById('lblClientContact').textContent = contact;
+      document.getElementById('lblDocNumber').textContent = num;
+      
+      let formattedDate = dateVal;
+      if (dateVal && dateVal !== '—') {
+        const parts = dateVal.split('-');
+        if (parts.length === 3) {
+          formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+      }
+      document.getElementById('lblDocDate').textContent = formattedDate;
+      document.getElementById('lblDocPaymentMethod').textContent = pay;
+      document.getElementById('lblBankDetails').textContent = bank;
+
+      const t = translations[currentLang];
+      
+      const printTitleText = currentDocType === 'devis' 
+        ? (currentLang === 'EN' ? 'Quote' : 'Devis')
+        : (currentLang === 'EN' ? 'Invoice' : 'Facture');
+      document.getElementById('txtPrintTitle').textContent = printTitleText;
+
+      const summaryTitleText = currentDocType === 'devis'
+        ? t.summaryTitle
+        : (currentLang === 'EN' ? 'Invoice Summary' : 'Récapitulatif de la Facture');
+      document.getElementById('txtSummaryTitle').textContent = summaryTitleText;
     }
 
     function toggleLogistics() {
@@ -2364,6 +2583,9 @@
       const logTotal = calcLogistics(currentView);
       document.getElementById('liLogistics').classList.toggle('hidden', logTotal === 0);
       animateValue('laLogistics', logTotal);
+
+      // Keep client and document details in sync
+      updateDocDetails();
     }
 
     // ── LISTENERS ───────────────────────────────────────────
@@ -2512,6 +2734,10 @@
 
     // Initialize Wow effects
     new Particles();
+
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('docDate').value = today;
 
     update();
   </script>
