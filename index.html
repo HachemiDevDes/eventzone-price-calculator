@@ -1,0 +1,2521 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eventzone — Event Price Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07090f;
+      --surface: #0f1219;
+      --surface2: #161b26;
+      --border: rgba(255, 255, 255, 0.07);
+      --border-hover: rgba(43, 127, 255, 0.4);
+      --blue: #2B7FFF;
+      --blue-glow: rgba(43, 127, 255, 0.15);
+      --blue-soft: rgba(43, 127, 255, 0.08);
+      --text: #f0f2f7;
+      --text-muted: #6b7592;
+      --text-sub: #a0a8c0;
+      --green: #22d08a;
+      --accent: #e8edff;
+      --radius: 14px;
+      --track-bg: #161b26;
+      --summary-grad-1: #0f1a2e;
+      --summary-grad-2: #0a1220;
+    }
+
+    body.light-mode {
+      --bg: #f8faff;
+      --surface: #ffffff;
+      --surface2: #f0f3f9;
+      --border: rgba(0, 0, 0, 0.08);
+      --border-hover: rgba(43, 127, 255, 0.4);
+      --blue-glow: rgba(43, 127, 255, 0.1);
+      --blue-soft: rgba(43, 127, 255, 0.05);
+      --text: #1a1d23;
+      --text-muted: #718096;
+      --text-sub: #4a5568;
+      --track-bg: #e2e8f0;
+      --summary-grad-1: #eef4ff;
+      --summary-grad-2: #f8faff;
+    }
+
+    body.light-mode::before {
+      background: radial-gradient(ellipse at center, rgba(43, 127, 255, 0.04) 0%, transparent 70%);
+    }
+
+    body.light-mode .logo img {
+      filter: none;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh;
+      padding: 40px 20px 80px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 500px;
+      background: radial-gradient(ellipse at center, rgba(43, 127, 255, 0.07) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #particles-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    .wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .main-layout {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    .main-left {
+      flex: 1.4;
+      min-width: 0;
+    }
+
+    .main-right {
+      flex: 1;
+      position: sticky;
+      top: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .main-layout {
+        flex-direction: column;
+      }
+
+      .main-right {
+        position: static;
+        width: 100%;
+      }
+    }
+
+    /* HEADER */
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .company-details {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 16px;
+      margin-bottom: 24px;
+    }
+
+    .logo img {
+      height: 24px;
+      width: auto;
+      display: block;
+      filter: brightness(0) invert(1);
+      margin: 0 auto 32px;
+    }
+
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    h1 em {
+      font-style: normal;
+      color: var(--blue);
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 15px;
+      font-weight: 300;
+      margin-bottom: 24px;
+    }
+
+    /* VIEW SELECTOR */
+    .view-selector {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 32px;
+      background: var(--surface);
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      width: fit-content;
+      margin: 0 auto 32px;
+    }
+
+    .view-selector button {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 24px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .view-selector button.active {
+      background: var(--blue);
+      color: white;
+      box-shadow: 0 4px 12px rgba(43, 127, 255, 0.3);
+    }
+
+    /* TOP CONTROLS */
+    .top-controls {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .top-controls button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .top-controls button:hover {
+      border-color: var(--blue);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px var(--blue-glow);
+    }
+
+    /* Magnetic Button Utility */
+    .btn-magnetic {
+      transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .top-controls button span {
+      font-size: 12px;
+      font-weight: 700;
+      font-family: inherit;
+    }
+
+    body.light-mode .slider-value {
+      background: #fbfcfe;
+    }
+
+    body.light-mode .slider-unit-price,
+    body.light-mode .slider-icon {
+      background: #fff;
+      border-color: rgba(43, 127, 255, 0.15);
+    }
+
+    body.light-mode .slider-subtotal {
+      color: #1a9e6a;
+    }
+
+    /* CARD */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 16px;
+      transition: border-color 0.3s;
+    }
+
+    @media (max-width: 600px) {
+      .card {
+        padding: 20px;
+      }
+    }
+
+    .card:hover {
+      border-color: rgba(43, 127, 255, 0.3);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .card {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent,
+        rgba(255, 255, 255, 0.03),
+        transparent
+      );
+      transform: rotate(45deg);
+      transition: 0.6s;
+      pointer-events: none;
+    }
+
+    .card:hover::after {
+      left: 100%;
+    }
+
+    .card-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--blue);
+      margin-bottom: 24px;
+    }
+
+    /* SLIDER ROW */
+    .slider-row {
+      margin-bottom: 28px;
+    }
+
+    .slider-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      gap: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .slider-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    .slider-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-sub);
+    }
+
+    .slider-icon {
+      width: 30px;
+      height: 30px;
+      background: var(--blue-soft);
+      border: 1px solid rgba(43, 127, 255, 0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .slider-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    @media (max-width: 600px) {
+      .slider-meta {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+
+    .slider-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      width: 100px;
+      padding: 2px 8px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .slider-value:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 2px var(--blue-glow);
+    }
+
+    .slider-value::-webkit-inner-spin-button,
+    .slider-value::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .slider-unit-price {
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 3px 8px;
+      background: var(--surface2);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .slider-subtotal {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--green);
+      min-width: 70px;
+      text-align: right;
+    }
+
+    /* RANGE INPUT */
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      background: var(--track-bg);
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+      position: relative;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      background: var(--blue);
+      border-radius: 50%;
+      border: 3px solid var(--bg);
+      box-shadow: 0 0 0 1px var(--blue), 0 4px 12px var(--blue-glow);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    input[type=range]:hover::-webkit-slider-thumb {
+      transform: scale(1.15);
+      box-shadow: 0 0 0 1px var(--blue), 0 4px 20px var(--blue-glow);
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      background: var(--blue);
+      border-radius: 50%;
+      border: 3px solid var(--bg);
+      box-shadow: 0 0 0 1px var(--blue);
+      cursor: pointer;
+    }
+
+    /* TRACK FILL — done via JS inline gradient */
+
+    /* CLIENT INFO */
+    .fields-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 560px) {
+      .fields-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-group label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .field-group input,
+    .field-group textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: none;
+    }
+
+    .field-group input:focus,
+    .field-group textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px var(--blue-glow);
+    }
+
+    .field-group textarea {
+      min-height: 70px;
+    }
+
+    /* TOGGLE SWITCH */
+    .switch-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--surface2);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+
+    .switch-wrapper:hover {
+      border-color: var(--border-hover);
+    }
+
+    .switch-label-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider-toggle {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--surface2);
+      transition: .4s;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .slider-toggle:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: var(--text-muted);
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider-toggle {
+      background-color: var(--blue-soft);
+      border-color: var(--blue);
+    }
+
+    input:checked + .slider-toggle:before {
+      transform: translateX(20px);
+      background-color: var(--blue);
+    }
+
+    /* COLLAPSIBLE */
+    .collapsible-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+
+    .collapsible-content.show {
+      max-height: 500px;
+      opacity: 1;
+      transform: translateY(0);
+      margin-top: 24px;
+    }
+
+    /* SUMMARY CARD */
+    .summary-card {
+      background: linear-gradient(135deg, var(--summary-grad-1) 0%, var(--summary-grad-2) 100%);
+      border: 1px solid rgba(43, 127, 255, 0.25);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @media (max-width: 600px) {
+      .summary-card {
+        padding: 24px 20px;
+      }
+    }
+
+    .summary-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(43, 127, 255, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .summary-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--blue);
+      margin-bottom: 20px;
+    }
+
+    .line-items {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .line-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .line-item.hidden {
+      display: none;
+    }
+
+    .line-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+
+    .line-qty {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--surface2);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .line-amount {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0;
+    }
+
+    .summary-totals {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .total-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      color: var(--text-sub);
+    }
+
+    .total-line span:last-child {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .discount-line span:last-child {
+      color: var(--green) !important;
+    }
+
+    body.light-mode .total-line {
+      color: #4a5568;
+    }
+
+    body.light-mode .total-line span:last-child {
+      color: #1a1d23;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .total-label {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+
+    .total-amount {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 38px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -1px;
+    }
+
+    @media (max-width: 600px) {
+      .total-amount {
+        font-size: 32px;
+      }
+    }
+
+    .total-amount span {
+      font-size: 20px;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+
+    /* BUTTON */
+    .btn-print {
+      width: 100%;
+      padding: 16px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s;
+      letter-spacing: -0.2px;
+    }
+
+    .btn-print:hover {
+      background: #3d8fff;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(43, 127, 255, 0.35);
+    }
+
+    .btn-print:active {
+      transform: translateY(0);
+    }
+
+    .note {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 12px;
+    }
+
+    .profit-badge {
+      margin-top: 24px;
+      background: rgba(34, 208, 138, 0.07);
+      border: 1px solid rgba(34, 208, 138, 0.2);
+      padding: 16px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .profit-label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .profit-label span:first-child {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .profit-label span:last-child {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .profit-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    /* ============ PRINT STYLES ============ */
+    @media print {
+      @page {
+        margin: 0;
+      }
+
+      html, body {
+        background: #fff !important;
+        height: auto !important;
+        min-height: 0 !important;
+        display: block !important;
+      }
+
+      body {
+        color: #111 !important;
+        padding: 20mm !important;
+        font-family: 'Space Grotesk', sans-serif;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      #particles-canvas {
+        display: none !important;
+      }
+
+      .main-layout {
+        display: block !important;
+      }
+
+      .main-left {
+        display: none !important;
+      }
+
+      .main-right {
+        width: 100% !important;
+      }
+
+      .wrapper {
+        max-width: 100%;
+      }
+
+      .summary-card::before {
+        display: none !important;
+      }
+
+      .company-details {
+        text-align: left !important;
+        font-size: 11px !important;
+        color: #333 !important;
+        border-bottom: 1px solid #dde2ef !important;
+        padding-bottom: 16px !important;
+        margin-bottom: 24px !important;
+      }
+
+      .header {
+        text-align: left !important;
+        margin-bottom: 24px !important;
+      }
+
+      .logo img {
+        margin: 0 0 16px 0 !important;
+      }
+
+      .logo img {
+        filter: none !important;
+      }
+
+      .logo-name {
+        color: #111 !important;
+      }
+
+      .logo-icon {
+        background: #2B7FFF !important;
+      }
+
+      .screen-title {
+        display: none !important;
+      }
+
+      .print-title {
+        display: block !important;
+        color: #111 !important;
+        font-size: 32px !important;
+        font-weight: 700 !important;
+        margin-bottom: 8px !important;
+      }
+
+      h1 em {
+        color: #2B7FFF !important;
+      }
+
+      .subtitle {
+        display: none !important;
+      }
+
+      .card {
+        background: #fff !important;
+        border: 1px solid #e0e4ef !important;
+        padding: 20px !important;
+        margin-bottom: 12px !important;
+        page-break-inside: avoid;
+      }
+
+      .card-title {
+        color: #2B7FFF !important;
+      }
+
+      .slider-label {
+        color: #333 !important;
+      }
+
+      .slider-value {
+        color: #111 !important;
+      }
+
+      .slider-subtotal {
+        color: #1a9e6a !important;
+      }
+
+      .slider-unit-price {
+        background: #f4f6fc !important;
+        color: #666 !important;
+        border-color: #dde2f0 !important;
+      }
+
+      .slider-icon {
+        background: #eef3ff !important;
+        border-color: #c8d9ff !important;
+      }
+
+      input[type=range] {
+        display: none !important;
+      }
+
+      .slider-row {
+        margin-bottom: 14px !important;
+      }
+
+      .summary-card {
+        background: #f8faff !important;
+        border: none !important;
+        padding: 16px !important;
+        page-break-inside: auto !important;
+      }
+
+      .summary-footer {
+        page-break-inside: avoid !important;
+      }
+
+      .summary-title {
+        color: #2B7FFF !important;
+        margin-bottom: 12px !important;
+        font-size: 10px !important;
+      }
+
+      .line-items {
+        gap: 6px !important;
+        margin-bottom: 12px !important;
+      }
+
+      .line-item {
+        background: #f4f6fc !important;
+        border-color: #e0e4ef !important;
+        padding: 6px 10px !important;
+        border-radius: 6px !important;
+        font-size: 12px !important;
+      }
+
+      .line-left {
+        color: #333 !important;
+      }
+
+      .line-qty {
+        background: #e8ecf8 !important;
+        color: #555 !important;
+      }
+
+      .line-amount {
+        color: #111 !important;
+      }
+
+      .divider {
+        background: #dde2ef !important;
+        margin: 10px 0 !important;
+      }
+
+      .total-label {
+        color: #555 !important;
+      }
+
+      .total-amount {
+        color: #111 !important;
+        font-size: 32px !important;
+      }
+
+      .total-amount span {
+        color: #888 !important;
+      }
+
+      .total-line {
+        font-size: 13px !important;
+        color: #333 !important;
+      }
+
+      .total-line span:last-child {
+        color: #111 !important;
+      }
+
+      .discount-line span:last-child {
+        color: #1a9e6a !important;
+      }
+
+      .fields-grid input,
+      .fields-grid textarea {
+        background: #fff !important;
+        border-color: #dde2ef !important;
+        color: #111 !important;
+      }
+
+      .field-group label {
+        color: #555 !important;
+      }
+
+      .card-title {
+        page-break-after: avoid;
+      }
+
+      .btn-print {
+        display: none !important;
+      }
+
+      .note {
+        display: none !important;
+      }
+
+      /* Print watermark */
+      .summary-card::after {
+        content: 'eventzone.pro';
+        position: absolute;
+        bottom: 16px;
+        left: 20px;
+        right: auto;
+        font-size: 11px;
+        color: rgba(43, 127, 255, 0.4) !important;
+        letter-spacing: 1px;
+      }
+
+      /* Slider value display for print */
+      .print-value-bar {
+        display: flex !important;
+        height: 4px;
+        background: #e0e4ef;
+        border-radius: 4px;
+        margin-top: 6px;
+        overflow: hidden;
+      }
+
+      .print-value-bar-fill {
+        background: #2B7FFF;
+        border-radius: 4px;
+        transition: width 0s;
+      }
+    }
+
+    @media screen {
+      .print-value-bar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="particles-canvas"></canvas>
+
+  <div class="wrapper">
+
+    <!-- TOP CONTROLS -->
+    <div class="top-controls no-print">
+      <button id="btnTheme" onclick="toggleTheme()" title="Toggle Mode">🌙</button>
+      <button id="btnLang" onclick="toggleLang()" title="Toggle Language"><span>FR</span></button>
+    </div>
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="logo">
+        <img src="https://i.imgur.com/jFDrQbM.png" alt="Eventzone Logo">
+      </div>
+      <h1 id="txtTitle" class="screen-title">Event <em>Price</em> Calculator</h1>
+      <h1 id="txtPrintTitle" class="print-title" style="display: none;">Quote</h1>
+      <p class="subtitle screen-title" id="txtSubtitle">Adjust the sliders to configure your event — get an instant quote.</p>
+
+      <div class="company-details">
+        <strong>SPASU Eventzone</strong><br>
+        Address: Lotissement Pons N° 80, 2ème étage, Bureau N° 16, Commune de Kouba, Wilaya d'Alger<br>
+        Phone: +213 781 45 75 11 &nbsp;|&nbsp; Email: contact@eventzone.pro<br>
+        RC: 26B1243704-00/16 &nbsp;|&nbsp; NIF: 002616124370413 &nbsp;|&nbsp; AI: 1618480091
+      </div>
+
+      <div class="view-selector no-print">
+        <button id="viewClient" class="active" onclick="setView('client')">Client Quote</button>
+        <button id="viewInternal" onclick="setView('internal')">Internal Cost</button>
+      </div>
+    </div>
+
+
+
+    <div class="main-layout">
+      <div class="main-left">
+        <!-- SLIDERS -->
+        <div class="card">
+          <div class="card-title" id="txtConfigTitle">⚙️ Event Configuration</div>
+
+          <!-- Days -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">📅</div>
+                <span id="lblDays">Event Duration</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="unitDaysLabel">days</div>
+                <input type="number" class="slider-value" id="valDays" value="1" min="1" max="30">
+              </div>
+            </div>
+            <input type="range" id="sliderDays" min="1" max="30" step="1" value="1">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barDays"></div>
+            </div>
+          </div>
+
+          <!-- Attendees -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">👥</div>
+                <span id="lblAttendees">Attendees</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceAttendees">100 DZD / person</div>
+                <input type="number" class="slider-value" id="valAttendees" value="50" min="0" max="50000">
+                <div class="slider-subtotal" id="subAttendees">5 000 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderAttendees" min="0" max="50000" step="50" value="50">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barAttendees"></div>
+            </div>
+          </div>
+
+          <!-- Hosts/Hostesses -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">🎀</div>
+                <span id="lblHosts">Hosts / Hostesses</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceHosts">9 000 DZD / person</div>
+                <input type="number" class="slider-value" id="valHosts" value="2" min="0" max="50">
+                <div class="slider-subtotal" id="subHosts">18 000 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderHosts" min="0" max="50" step="1" value="2">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barHosts"></div>
+            </div>
+          </div>
+
+          <!-- PCs -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">💻</div>
+                <span id="lblPCs">PCs / Laptops</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="pricePCs">4 000 DZD / unit</div>
+                <input type="number" class="slider-value" id="valPCs" value="1" min="0" max="50">
+                <div class="slider-subtotal" id="subPCs">4 000 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderPCs" min="0" max="50" step="1" value="1">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barPCs"></div>
+            </div>
+          </div>
+
+          <!-- Printers -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">🖨️</div>
+                <span id="lblPrinters">Printers</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="pricePrinters">5 000 DZD / unit</div>
+                <input type="number" class="slider-value" id="valPrinters" value="1" min="0" max="50">
+                <div class="slider-subtotal" id="subPrinters">5 000 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderPrinters" min="0" max="50" step="1" value="1">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barPrinters"></div>
+            </div>
+          </div>
+
+          <!-- Standard Badges -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">🪪</div>
+                <span id="lblBadges">Standard Badges</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceBadges">60 DZD / badge</div>
+                <input type="number" class="slider-value" id="valBadges" value="50" min="0" max="50000">
+                <div class="slider-subtotal" id="subBadges">3 000 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderBadges" min="0" max="50000" step="50" value="50">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barBadges"></div>
+            </div>
+          </div>
+
+          <!-- VIP Badges -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">⭐</div>
+                <span id="lblVip">VIP Badges</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceVip">250 DZD / badge</div>
+                <input type="number" class="slider-value" id="valVip" value="0" min="0" max="50000">
+                <div class="slider-subtotal" id="subVip">0 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderVip" min="0" max="50000" step="50" value="0">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barVip"></div>
+            </div>
+          </div>
+
+          <!-- Discount -->
+          <div class="slider-row no-print">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">🏷️</div>
+                <span id="lblDiscount">Discount</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price">% discount</div>
+                <input type="number" class="slider-value" id="valDiscount" value="0" min="0" max="50">
+              </div>
+            </div>
+            <input type="range" id="sliderDiscount" min="0" max="50" step="1" value="0">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barDiscount"></div>
+            </div>
+          </div>
+
+        </div>
+        
+        <!-- MARKETING & PROMOTION -->
+        <div class="card">
+          <div class="card-title" id="txtMarketingTitle">📢 Marketing & Promotion</div>
+
+          <!-- Digital Marketing -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">📱</div>
+                <span id="lblDigital">Digital Marketing</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceDigital">200 000 DZD / pkg</div>
+                <input type="number" class="slider-value" id="valDigital" value="0" min="0" max="5">
+                <div class="slider-subtotal" id="subDigital">0 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderDigital" min="0" max="5" step="1" value="0">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barDigital"></div>
+            </div>
+          </div>
+
+          <!-- Brand Identity & Website Checks -->
+          <div class="fields-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+            <div class="switch-wrapper" style="background: rgba(255,255,255,0.03); padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+              <div class="switch-label-group">
+                <div class="slider-icon" style="font-size: 16px;">🎨</div>
+                <span id="lblIdentity" style="font-size: 13px; font-weight: 500;">Brand Identity</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="checkIdentity" onchange="update()">
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+            <div class="switch-wrapper" style="background: rgba(255,255,255,0.03); padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+              <div class="switch-label-group">
+                <div class="slider-icon" style="font-size: 16px;">🌐</div>
+                <span id="lblWebsite" style="font-size: 13px; font-weight: 500;">Event Website</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="checkWebsite" onchange="update()">
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Podcast Episodes -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">🎙️</div>
+                <span id="lblPodcasts">Podcast Episodes</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="pricePodcasts">35 000 DZD / ep</div>
+                <input type="number" class="slider-value" id="valPodcasts" value="0" min="0" max="20">
+                <div class="slider-subtotal" id="subPodcasts">0 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderPodcasts" min="0" max="20" step="1" value="0">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barPodcasts"></div>
+            </div>
+          </div>
+
+          <!-- Short Videos & Reels -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">🎬</div>
+                <span id="lblReels">Short Videos & Reels</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceReels">20 000 DZD / unit</div>
+                <input type="number" class="slider-value" id="valReels" value="0" min="0" max="50">
+                <div class="slider-subtotal" id="subReels">0 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderReels" min="0" max="50" step="1" value="0">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barReels"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PRODUCTION & AV SERVICES -->
+        <div class="card">
+          <div class="card-title" id="txtProductionTitle">🎬 Production & AV Services</div>
+
+          <!-- LED Screen & Sound System -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">🖥️</div>
+                <span id="lblLedSound">LED Screen & Sound System</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceLedSound">13 000 DZD / sqm</div>
+                <input type="number" class="slider-value" id="valLedSound" value="0" min="0" max="100">
+                <div class="slider-subtotal" id="subLedSound">0 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderLedSound" min="0" max="100" step="1" value="0">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barLedSound"></div>
+            </div>
+          </div>
+
+          <!-- Banners & Branding -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">🚩</div>
+                <span id="lblBanners">Banners & Branding</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceBanners">35 000 DZD / unit</div>
+                <input type="number" class="slider-value" id="valBanners" value="0" min="0" max="100">
+                <div class="slider-subtotal" id="subBanners">0 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderBanners" min="0" max="100" step="1" value="0">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barBanners"></div>
+            </div>
+          </div>
+
+          <!-- Video Coverage -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">🎥</div>
+                <span id="lblVideo">Video Coverage</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceVideo">70 000 DZD / day</div>
+                <input type="number" class="slider-value" id="valVideo" value="0" min="0" max="10">
+                <div class="slider-subtotal" id="subVideo">0 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderVideo" min="0" max="10" step="1" value="0">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barVideo"></div>
+            </div>
+          </div>
+
+          <!-- Animators -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">🎭</div>
+                <span id="lblAnimators">Animators & Entertainment</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceAnimators">70 000 DZD / unit</div>
+                <input type="number" class="slider-value" id="valAnimators" value="0" min="0" max="20">
+                <div class="slider-subtotal" id="subAnimators">0 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderAnimators" min="0" max="20" step="1" value="0">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barAnimators"></div>
+            </div>
+          </div>
+
+          <!-- Live Streaming -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">📡</div>
+                <span id="lblStreaming">Live Streaming</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceStreaming">35 000 DZD / day</div>
+                <input type="number" class="slider-value" id="valStreaming" value="0" min="0" max="5">
+                <div class="slider-subtotal" id="subStreaming">0 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderStreaming" min="0" max="5" step="1" value="0">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barStreaming"></div>
+            </div>
+          </div>
+
+          <!-- Bag of Goodies -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">🎁</div>
+                <span id="lblGoodies">Bag of Goodies</span>
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceGoodies">1 500 DZD / unit</div>
+                <input type="number" class="slider-value" id="valGoodies" value="0" min="0" max="1000">
+                <div class="slider-subtotal" id="subGoodies">0 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderGoodies" min="0" max="1000" step="10" value="0">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barGoodies"></div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- LOGISTICS & DISTANCE -->
+        <div class="card">
+          <div class="card-title" id="txtLogisticsTitle">🚚 Logistics & Distance</div>
+          
+          <div class="switch-wrapper">
+            <div class="switch-label-group">
+              <div class="slider-icon">📍</div>
+              <span id="lblRemoteToggle" style="font-size: 14px; font-weight: 500; color: var(--text-sub);">Event outside base city</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="checkRemote" onchange="toggleLogistics()">
+              <span class="slider-toggle"></span>
+            </label>
+          </div>
+
+          <div id="logisticsContent" class="collapsible-content">
+            <div class="fields-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+              <div class="field-group">
+                <label id="lblStaffCount">Staff Members</label>
+                <input type="number" id="valStaffCount" value="1" min="1" oninput="update()">
+              </div>
+              <div class="field-group">
+                <label id="lblTransport">Transport Fees (Fixed Total)</label>
+                <input type="number" id="valTransport" value="0" min="0" oninput="update()">
+              </div>
+              <div class="field-group">
+                <label id="lblAccommodation">Accommodation (per pers./day)</label>
+                <input type="number" id="valAccommodation" value="0" min="0" oninput="update()">
+              </div>
+              <div class="field-group">
+                <label id="lblMeals">Meals (per pers./day)</label>
+                <input type="number" id="valMeals" value="0" min="0" oninput="update()">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PRICING CONFIG (editable, no-print) -->
+        <div class="card no-print" style="border-style: dashed;">
+          <div class="card-title" id="txtPricingConfig">🔧 Pricing Configuration <span
+              style="color:var(--text-muted);font-size:10px;font-weight:400;letter-spacing:0;text-transform:none;margin-left:6px;" id="txtPricingHint">—
+              edit unit prices below</span></div>
+          <div class="fields-grid">
+            <div class="field-group">
+              <label id="cfgLblAttendees">Price per Attendee (DZD)</label>
+              <input type="number" id="cfgAttendees" value="100" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblHosts">Price per Host/Hostess (DZD)</label>
+              <input type="number" id="cfgHosts" value="9000" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblPCs">Price per PC (DZD)</label>
+              <input type="number" id="cfgPCs" value="4000" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblPrinters">Price per Printer (DZD)</label>
+              <input type="number" id="cfgPrinters" value="5000" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblBadges">Price per Standard Badge (DZD)</label>
+              <input type="number" id="cfgBadges" value="60" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblVip">Price per VIP Badge (DZD)</label>
+              <input type="number" id="cfgVip" value="250" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblDigital">Digital Marketing (DZD)</label>
+              <input type="number" id="cfgDigital" value="200000" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblIdentity">Brand Identity (DZD)</label>
+              <input type="number" id="cfgIdentity" value="80000" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblWebsite">Event Website (DZD)</label>
+              <input type="number" id="cfgWebsite" value="120000" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblPodcasts">Podcast Episodes (DZD)</label>
+              <input type="number" id="cfgPodcasts" value="35000" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblReels">Short Videos & Reels (DZD)</label>
+              <input type="number" id="cfgReels" value="20000" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblLedSound">LED Screen & Sound System (DZD)</label>
+              <input type="number" id="cfgLedSound" value="13000" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblBanners">Banners & Branding (DZD)</label>
+              <input type="number" id="cfgBanners" value="35000" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblVideo">Video Coverage (DZD)</label>
+              <input type="number" id="cfgVideo" value="70000" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblAnimators">Animators & Entertainment (DZD)</label>
+              <input type="number" id="cfgAnimators" value="70000" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblStreaming">Live Streaming (DZD)</label>
+              <input type="number" id="cfgStreaming" value="35000" min="0">
+            </div>
+            <div class="field-group">
+              <label id="cfgLblGoodies">Bag of Goodies (DZD)</label>
+              <input type="number" id="cfgGoodies" value="1500" min="0">
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- end .main-left -->
+
+      <div class="main-right">
+        <!-- SUMMARY -->
+        <div class="summary-card">
+          <div class="summary-title" id="txtSummaryTitle">Quote Summary</div>
+
+          <div class="line-items">
+            <div class="line-item" id="liAttendees">
+              <div class="line-left">
+                <span id="liLblAttendees">Attendees</span>
+                <span class="line-qty" id="lqAttendees">×50</span>
+              </div>
+              <div class="line-amount" id="laAttendees">5 000 DZD</div>
+            </div>
+            <div class="line-item" id="liHosts">
+              <div class="line-left">
+                <span id="liLblHosts">Hosts / Hostesses</span>
+                <span class="line-qty" id="lqHosts">×2</span>
+              </div>
+              <div class="line-amount" id="laHosts">18 000 DZD</div>
+            </div>
+            <div class="line-item" id="liPCs">
+              <div class="line-left">
+                <span id="liLblPCs">PCs / Laptops</span>
+                <span class="line-qty" id="lqPCs">×1</span>
+              </div>
+              <div class="line-amount" id="laPCs">5 000 DZD</div>
+            </div>
+            <div class="line-item" id="liPrinters">
+              <div class="line-left">
+                <span id="liLblPrinters">Printers</span>
+                <span class="line-qty" id="lqPrinters">×1</span>
+              </div>
+              <div class="line-amount" id="laPrinters">4 000 DZD</div>
+            </div>
+            <div class="line-item" id="liBadges">
+              <div class="line-left">
+                <span id="liLblBadges">Standard Badges</span>
+                <span class="line-qty" id="lqBadges">×50</span>
+              </div>
+              <div class="line-amount" id="laBadges">3 000 DZD</div>
+            </div>
+            <div class="line-item" id="liVip">
+              <div class="line-left">
+                <span id="liLblVip">VIP Badges</span>
+                <span class="line-qty" id="lqVip">×0</span>
+              </div>
+              <div class="line-amount" id="laVip">0 DZD</div>
+            </div>
+            
+            <div class="line-item hidden" id="liDigital">
+              <div class="line-left">
+                <span id="liLblDigital">Digital Marketing</span>
+                <span class="line-qty" id="lqDigital">×0</span>
+              </div>
+              <div class="line-amount" id="laDigital">0 DZD</div>
+            </div>
+            <div class="line-item hidden" id="liIdentity">
+              <div class="line-left">
+                <span id="liLblIdentity">Brand Identity</span>
+              </div>
+              <div class="line-amount" id="laIdentity">0 DZD</div>
+            </div>
+            <div class="line-item hidden" id="liWebsite">
+              <div class="line-left">
+                <span id="liLblWebsite">Event Website</span>
+              </div>
+              <div class="line-amount" id="laWebsite">0 DZD</div>
+            </div>
+            <div class="line-item hidden" id="liPodcasts">
+              <div class="line-left">
+                <span id="liLblPodcasts">Podcast Episodes</span>
+                <span class="line-qty" id="lqPodcasts">×0</span>
+              </div>
+              <div class="line-amount" id="laPodcasts">0 DZD</div>
+            </div>
+            <div class="line-item hidden" id="liReels">
+              <div class="line-left">
+                <span id="liLblReels">Short Videos & Reels</span>
+                <span class="line-qty" id="lqReels">×0</span>
+              </div>
+              <div class="line-amount" id="laReels">0 DZD</div>
+            </div>
+            <div class="line-item hidden" id="liLedSound">
+              <div class="line-left">
+                <span id="liLblLedSound">LED Screen & Sound System</span>
+                <span class="line-qty" id="lqLedSound">×0</span>
+              </div>
+              <div class="line-amount" id="laLedSound">0 DZD</div>
+            </div>
+            <div class="line-item hidden" id="liBanners">
+              <div class="line-left">
+                <span id="liLblBanners">Banners & Branding</span>
+                <span class="line-qty" id="lqBanners">×0</span>
+              </div>
+              <div class="line-amount" id="laBanners">0 DZD</div>
+            </div>
+            <div class="line-item hidden" id="liVideo">
+              <div class="line-left">
+                <span id="liLblVideo">Video Coverage</span>
+                <span class="line-qty" id="lqVideo">×0</span>
+              </div>
+              <div class="line-amount" id="laVideo">0 DZD</div>
+            </div>
+            <div class="line-item hidden" id="liAnimators">
+              <div class="line-left">
+                <span id="liLblAnimators">Animators & Entertainment</span>
+                <span class="line-qty" id="lqAnimators">×0</span>
+              </div>
+              <div class="line-amount" id="laAnimators">0 DZD</div>
+            </div>
+            <div class="line-item hidden" id="liStreaming">
+              <div class="line-left">
+                <span id="liLblStreaming">Live Streaming</span>
+                <span class="line-qty" id="lqStreaming">×0</span>
+              </div>
+              <div class="line-amount" id="laStreaming">0 DZD</div>
+            </div>
+            <div class="line-item hidden" id="liGoodies">
+              <div class="line-left">
+                <span id="liLblGoodies">Bag of Goodies</span>
+                <span class="line-qty" id="lqGoodies">×0</span>
+              </div>
+              <div class="line-amount" id="laGoodies">0 DZD</div>
+            </div>
+            <div class="line-item hidden" id="liLogistics">
+              <div class="line-left">
+                <span id="liLblLogistics">Logistics & Displacement</span>
+              </div>
+              <div class="line-amount" id="laLogistics">0 DZD</div>
+            </div>
+          </div>
+
+          <div class="summary-footer">
+            <div class="divider"></div>
+
+            <div class="summary-totals">
+              <div class="total-line">
+                <span id="txtSubtotalLabel">Subtotal</span>
+                <span id="subtotalAmount">0 DZD</span>
+              </div>
+              <div class="total-line discount-line hidden" id="discountRow">
+                <span id="txtDiscountLabel">Discount</span>
+                <span id="discountAmount">0 DZD</span>
+              </div>
+              <div class="total-line">
+                <span id="txtTaxLabel">Taxes (19% VAT)</span>
+                <span id="taxAmount">0 DZD</span>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="total-row">
+              <div>
+                <div class="total-label" id="txtTotalLabel">Total Estimate</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;" id="txtTaxNote">Taxes included (19% VAT)</div>
+              </div>
+              <div class="total-amount" id="totalAmount">50 000 <span>DZD</span></div>
+            </div>
+          </div>
+
+          <!-- Profit Tracking -->
+          <div class="profit-badge no-print" id="profitRow">
+            <div class="profit-label">
+              <span id="txtProfitLabel">📈 Estimated Profit</span>
+              <span id="marginLabel">Margin: 0%</span>
+            </div>
+            <div class="profit-value" id="valProfit">0 DZD</div>
+          </div>
+        </div>
+
+        <!-- PRINT BUTTON -->
+        <button class="btn-print no-print" onclick="printQuote()" id="btnPrint">
+          <span>🖨️</span> Print / Save Quote as PDF
+        </button>
+        <p class="note no-print" id="txtPrintNote">Opens print dialog — choose "Save as PDF" to export.</p>
+
+      </div> <!-- end .main-right -->
+    </div> <!-- end .main-layout -->
+  </div> <!-- end .wrapper -->
+
+  <script>
+    // ── CONFIG & STATE ──────────────────────────────────────
+    let currentView = 'client';
+    let currentLang = 'EN';
+
+    const translations = {
+      EN: {
+        title: 'Event <em>Price</em> Calculator',
+        subtitle: 'Adjust the sliders to configure your event — get an instant quote.',
+        viewClient: 'Client Quote',
+        viewInternal: 'Internal Cost',
+        configTitle: '⚙️ Event Configuration',
+        attendees: 'Attendees',
+        hosts: 'Hosts / Hostesses',
+        pcs: 'PCs / Laptops',
+        printers: 'Printers',
+        badges: 'Standard Badges',
+        vip: 'VIP Badges',
+        days: 'Event Duration',
+        unitDays: 'days',
+        pricingConfig: '🔧 Pricing Configuration',
+        pricingHint: '— edit unit prices below',
+        cfgLblAttendees: 'Price per Attendee (DZD)',
+        cfgLblHosts: 'Price per Host/Hostess (DZD)',
+        cfgLblPCs: 'Price per PC (DZD)',
+        cfgLblPrinters: 'Price per Printer (DZD)',
+        cfgLblBadges: 'Price per Standard Badge (DZD)',
+        cfgLblVip: 'Price per VIP Badge (DZD)',
+        summaryTitle: 'Quote Summary',
+        totalLabel: 'Total Estimate',
+        taxNote: 'Taxes included (19% VAT)',
+        profitLabel: '📈 Estimated Profit',
+        margin: 'Margin',
+        print: '🖨️ Print / Save Quote as PDF',
+        printNote: 'Opens print dialog — choose "Save as PDF" to export.',
+        unitPerson: 'DZD / person',
+        unitUnit: 'DZD / unit',
+        unitBadge: 'DZD / badge',
+        unitVip: 'DZD / VIP',
+        base: 'base',
+        logisticsTitle: '🚚 Logistics & Distance',
+        remoteToggle: 'Event outside base city',
+        staffCount: 'Staff Members',
+        transport: 'Transport Fees (Fixed Total)',
+        accommodation: 'Accommodation (per pers./day)',
+        meals: 'Meals (per pers./day)',
+        liLogistics: 'Logistics & Displacement',
+        marketingTitle: '📢 Marketing & Promotion',
+        digitalMarketing: 'Digital Marketing',
+        brandIdentity: 'Brand Identity',
+        eventWebsite: 'Event Website',
+        podcasts: 'Podcast Episodes',
+        reels: 'Short Videos & Reels',
+        productionTitle: '🎬 Production & AV Services',
+        ledSound: 'LED Screen (sqm)',
+        banners: 'Banners & Branding',
+        videoCoverage: 'Video Coverage',
+        animators: 'Animator',
+        liveStreaming: 'Live Streaming',
+        goodies: 'Bag of Goodies',
+        printTitle: 'Quote',
+        subtotal: 'Subtotal',
+        discount: 'Discount',
+        tax: 'Taxes (19% VAT)',
+        lblDiscount: 'Discount'
+      },
+      FR: {
+        title: 'Calculateur de <em>Prix</em> Événementiel',
+        subtitle: 'Ajustez les curseurs pour configurer votre événement — obtenez un devis instantané.',
+        viewClient: 'Devis Client',
+        viewInternal: 'Coût Interne',
+        configTitle: '⚙️ Configuration de l\'Événement',
+        attendees: 'Participants',
+        hosts: 'Hôtes / Hôtesses',
+        pcs: 'PC / Ordinateurs',
+        printers: 'Imprimantes',
+        badges: 'Badges Standard',
+        vip: 'Badges VIP',
+        days: 'Durée de l\'Événement',
+        unitDays: 'jours',
+        pricingConfig: '🔧 Configuration des Tarifs',
+        pricingHint: '— modifiez les prix unitaires',
+        cfgLblAttendees: 'Prix par Participant (DZD)',
+        cfgLblHosts: 'Prix par Hôte/Hôtesse (DZD)',
+        cfgLblPCs: 'Prix par PC (DZD)',
+        cfgLblPrinters: 'Prix par Imprimante (DZD)',
+        cfgLblBadges: 'Prix par Badge Standard (DZD)',
+        cfgLblVip: 'Prix par Badge VIP (DZD)',
+        summaryTitle: 'Récapitulatif du Devis',
+        totalLabel: 'Estimation Totale',
+        taxNote: 'Taxes incluses (19% TVA)',
+        profitLabel: '📈 Profit Estimé',
+        margin: 'Marge',
+        print: '🖨️ Imprimer / Enregistrer en PDF',
+        printNote: 'Ouvre la fenêtre d\'impression — choisissez "Enregistrer au format PDF".',
+        unitPerson: 'DZD / pers.',
+        unitUnit: 'DZD / unité',
+        unitBadge: 'DZD / badge',
+        unitVip: 'DZD / VIP',
+        base: 'base',
+        logisticsTitle: '🚚 Logistique & Déplacement',
+        remoteToggle: 'Événement hors zone de base',
+        staffCount: 'Membres du Staff',
+        transport: 'Frais de Transport (Total Fixe)',
+        accommodation: 'Hébergement (par pers./jour)',
+        meals: 'Restauration (par pers./jour)',
+        liLogistics: 'Logistique & Déplacement',
+        marketingTitle: '📢 Marketing & Promotion',
+        digitalMarketing: 'Marketing Digital',
+        brandIdentity: 'Identité de Marque',
+        eventWebsite: 'Site Web Événementiel',
+        podcasts: 'Épisodes Podcast',
+        reels: 'Vidéos Courtes & Reels',
+        productionTitle: '🎬 Production & Services AV',
+        ledSound: 'Écran LED (m²)',
+        banners: 'Bannières & Signalétique',
+        videoCoverage: 'Couverture Vidéo',
+        animators: 'Animateur',
+        liveStreaming: 'Streaming en Direct',
+        goodies: 'Sacs de Goodies',
+        printTitle: 'Devis',
+        subtotal: 'Sous-total',
+        discount: 'Remise',
+        tax: 'TVA (19%)',
+        lblDiscount: 'Remise'
+      }
+    };
+
+    function toggleTheme() {
+      document.body.classList.toggle('light-mode');
+      const isLight = document.body.classList.contains('light-mode');
+      document.getElementById('btnTheme').textContent = isLight ? '☀️' : '🌙';
+      update(); // Refresh slider tracks and particle colors
+    }
+
+    function toggleLang() {
+      currentLang = currentLang === 'EN' ? 'FR' : 'EN';
+      document.getElementById('btnLang').querySelector('span').textContent = currentLang === 'EN' ? 'FR' : 'EN';
+      applyTranslations();
+      update();
+    }
+
+    function applyTranslations() {
+      const t = translations[currentLang];
+      document.getElementById('txtTitle').innerHTML = t.title;
+      document.getElementById('txtPrintTitle').textContent = t.printTitle;
+      document.getElementById('txtSubtitle').textContent = t.subtitle;
+      document.getElementById('viewClient').textContent = t.viewClient;
+      document.getElementById('viewInternal').textContent = t.viewInternal;
+      document.getElementById('txtConfigTitle').textContent = t.configTitle;
+      document.getElementById('lblAttendees').textContent = t.attendees;
+      document.getElementById('lblHosts').textContent = t.hosts;
+      document.getElementById('lblPCs').textContent = t.pcs;
+      document.getElementById('lblPrinters').textContent = t.printers;
+      document.getElementById('lblBadges').textContent = t.badges;
+      document.getElementById('lblVip').textContent = t.vip;
+      document.getElementById('lblDays').textContent = t.days;
+      document.getElementById('unitDaysLabel').textContent = t.unitDays;
+      document.getElementById('lblDiscount').textContent = t.lblDiscount;
+      document.getElementById('txtPricingConfig').childNodes[0].textContent = t.pricingConfig + ' ';
+      document.getElementById('txtPricingHint').textContent = t.pricingHint;
+      
+      document.getElementById('cfgLblAttendees').textContent = t.cfgLblAttendees;
+      document.getElementById('cfgLblHosts').textContent = t.cfgLblHosts;
+      document.getElementById('cfgLblPCs').textContent = t.cfgLblPCs;
+      document.getElementById('cfgLblPrinters').textContent = t.cfgLblPrinters;
+      document.getElementById('cfgLblBadges').textContent = t.cfgLblBadges;
+      document.getElementById('cfgLblVip').textContent = t.cfgLblVip;
+
+      document.getElementById('txtSummaryTitle').textContent = t.summaryTitle;
+      document.getElementById('txtSubtotalLabel').textContent = t.subtotal;
+      document.getElementById('txtTaxLabel').textContent = t.tax;
+      document.getElementById('liLblAttendees').textContent = t.attendees;
+      document.getElementById('liLblHosts').textContent = t.hosts;
+      document.getElementById('liLblPCs').textContent = t.pcs;
+      document.getElementById('liLblPrinters').textContent = t.printers;
+      document.getElementById('liLblBadges').textContent = t.badges;
+      document.getElementById('liLblVip').textContent = t.vip;
+
+      document.getElementById('txtTotalLabel').textContent = t.totalLabel;
+      document.getElementById('txtTaxNote').textContent = t.taxNote;
+      document.getElementById('txtProfitLabel').textContent = t.profitLabel;
+      document.getElementById('btnPrint').textContent = t.print;
+      document.getElementById('txtPrintNote').textContent = t.printNote;
+
+      document.getElementById('txtLogisticsTitle').textContent = t.logisticsTitle;
+      document.getElementById('lblRemoteToggle').textContent = t.remoteToggle;
+      document.getElementById('lblStaffCount').textContent = t.staffCount;
+      document.getElementById('lblTransport').textContent = t.transport;
+      document.getElementById('lblAccommodation').textContent = t.accommodation;
+      document.getElementById('lblMeals').textContent = t.meals;
+      document.getElementById('liLblLogistics').textContent = t.liLogistics;
+
+      // New Sections
+      document.getElementById('txtMarketingTitle').textContent = t.marketingTitle;
+      document.getElementById('lblDigital').textContent = t.digitalMarketing;
+      document.getElementById('lblIdentity').textContent = t.brandIdentity;
+      document.getElementById('lblWebsite').textContent = t.eventWebsite;
+      document.getElementById('lblPodcasts').textContent = t.podcasts;
+      document.getElementById('lblReels').textContent = t.reels;
+
+      document.getElementById('txtProductionTitle').textContent = t.productionTitle;
+      document.getElementById('lblLedSound').textContent = t.ledSound;
+      document.getElementById('lblBanners').textContent = t.banners;
+      document.getElementById('lblVideo').textContent = t.videoCoverage;
+      document.getElementById('lblAnimators').textContent = t.animators;
+      document.getElementById('lblStreaming').textContent = t.liveStreaming;
+      document.getElementById('lblGoodies').textContent = t.goodies;
+
+      document.getElementById('liLblDigital').textContent = t.digitalMarketing;
+      document.getElementById('liLblIdentity').textContent = t.brandIdentity;
+      document.getElementById('liLblWebsite').textContent = t.eventWebsite;
+      document.getElementById('liLblPodcasts').textContent = t.podcasts;
+      document.getElementById('liLblReels').textContent = t.reels;
+      document.getElementById('liLblLedSound').textContent = t.ledSound;
+      document.getElementById('liLblBanners').textContent = t.banners;
+      document.getElementById('liLblVideo').textContent = t.videoCoverage;
+      document.getElementById('liLblAnimators').textContent = t.animators;
+      document.getElementById('liLblStreaming').textContent = t.liveStreaming;
+      document.getElementById('liLblGoodies').textContent = t.goodies;
+
+      document.getElementById('cfgLblDigital').textContent = t.digitalMarketing + ' (DZD)';
+      document.getElementById('cfgLblIdentity').textContent = t.brandIdentity + ' (DZD)';
+      document.getElementById('cfgLblWebsite').textContent = t.eventWebsite + ' (DZD)';
+      document.getElementById('cfgLblPodcasts').textContent = t.podcasts + ' (DZD)';
+      document.getElementById('cfgLblReels').textContent = t.reels + ' (DZD)';
+      document.getElementById('cfgLblLedSound').textContent = t.ledSound + ' (DZD)';
+      document.getElementById('cfgLblBanners').textContent = t.banners + ' (DZD)';
+      document.getElementById('cfgLblVideo').textContent = t.videoCoverage + ' (DZD)';
+      document.getElementById('cfgLblAnimators').textContent = t.animators + ' (DZD)';
+      document.getElementById('cfgLblStreaming').textContent = t.liveStreaming + ' (DZD)';
+      document.getElementById('cfgLblGoodies').textContent = t.goodies + ' (DZD)';
+    }
+
+    const cfg = {
+      client: {
+        attendees: 100,
+        hosts: 9000,
+        pcs: 6000,
+        printers: 7000,
+        badges: 60,
+        vip: 250,
+        digital: 200000,
+        identity: 80000,
+        website: 120000,
+        podcasts: 35000,
+        reels: 20000,
+        ledSound: 13000,
+        banners: 35000,
+        video: 70000,
+        animators: 70000,
+        streaming: 35000,
+        goodies: 1500
+      },
+      internal: {
+        attendees: 10,
+        hosts: 4500,
+        pcs: 3000,
+        printers: 3000,
+        badges: 35,
+        vip: 200,
+        digital: 140000,
+        identity: 40000,
+        website: 60000,
+        podcasts: 18000,
+        reels: 10000,
+        ledSound: 8000,
+        banners: 20000,
+        video: 40000,
+        animators: 40000,
+        streaming: 18000,
+        goodies: 900
+      }
+    };
+
+    const logisticsCfg = {
+      client: { transport: 0, accommodation: 0, meals: 0, isRemote: false, staffCount: 1 },
+      internal: { transport: 0, accommodation: 0, meals: 0, isRemote: false, staffCount: 1 }
+    };
+
+    const marketingState = {
+      identity: false,
+      website: false
+    };
+
+    function setView(v) {
+      currentView = v;
+      document.getElementById('viewClient').classList.toggle('active', v === 'client');
+      document.getElementById('viewInternal').classList.toggle('active', v === 'internal');
+
+      // Update config inputs to match the view
+      const data = cfg[currentView];
+      document.getElementById('cfgAttendees').value = data.attendees;
+      document.getElementById('cfgHosts').value = data.hosts;
+      document.getElementById('cfgPCs').value = data.pcs;
+      document.getElementById('cfgPrinters').value = data.printers;
+      document.getElementById('cfgBadges').value = data.badges;
+      document.getElementById('cfgVip').value = data.vip;
+      document.getElementById('cfgDigital').value = data.digital;
+      document.getElementById('cfgIdentity').value = data.identity;
+      document.getElementById('cfgWebsite').value = data.website;
+      document.getElementById('cfgPodcasts').value = data.podcasts;
+      document.getElementById('cfgReels').value = data.reels;
+      document.getElementById('cfgLedSound').value = data.ledSound;
+      document.getElementById('cfgBanners').value = data.banners;
+      document.getElementById('cfgVideo').value = data.video;
+      document.getElementById('cfgAnimators').value = data.animators;
+      document.getElementById('cfgStreaming').value = data.streaming;
+      document.getElementById('cfgGoodies').value = data.goodies;
+
+      // Sync marketing state
+      document.getElementById('checkIdentity').checked = marketingState.identity;
+      document.getElementById('checkWebsite').checked = marketingState.website;
+
+      // Update logistics inputs
+      const log = logisticsCfg[currentView];
+      document.getElementById('checkRemote').checked = log.isRemote;
+      document.getElementById('valStaffCount').value = log.staffCount;
+      document.getElementById('valTransport').value = log.transport;
+      document.getElementById('valAccommodation').value = log.accommodation;
+      document.getElementById('valMeals').value = log.meals;
+      
+      document.getElementById('logisticsContent').classList.toggle('show', log.isRemote);
+
+      update();
+    }
+
+    function toggleLogistics() {
+      const isRemote = document.getElementById('checkRemote').checked;
+      logisticsCfg[currentView].isRemote = isRemote;
+      document.getElementById('logisticsContent').classList.toggle('show', isRemote);
+      update();
+    }
+
+    // ── HELPERS ─────────────────────────────────────────────
+    function fmt(n) {
+      return n.toLocaleString('fr-DZ') + ' DZD';
+    }
+
+    function setTrack(el) {
+      const min = parseFloat(el.min);
+      const max = parseFloat(el.max);
+      const val = parseFloat(el.value);
+      const pct = ((val - min) / (max - min)) * 100;
+      const trackBg = getComputedStyle(document.body).getPropertyValue('--track-bg').trim();
+      el.style.background = `linear-gradient(to right, #2B7FFF ${pct}%, ${trackBg} ${pct}%)`;
+      return pct;
+    }
+
+    function updateBar(barId, pct) {
+      const bar = document.getElementById(barId);
+      if (bar) bar.style.width = pct + '%';
+    }
+
+    // ── MAIN UPDATE ─────────────────────────────────────────
+    function update() {
+      const qD = parseInt(document.getElementById('sliderDays').value);
+      const qA = parseInt(document.getElementById('sliderAttendees').value);
+      const qH = parseInt(document.getElementById('sliderHosts').value);
+      const qP = parseInt(document.getElementById('sliderPCs').value);
+      const qPr = parseInt(document.getElementById('sliderPrinters').value);
+      const qB = parseInt(document.getElementById('sliderBadges').value);
+      const qV = parseInt(document.getElementById('sliderVip').value);
+      const qDigital = parseInt(document.getElementById('sliderDigital').value);
+      const qPodcasts = parseInt(document.getElementById('sliderPodcasts').value);
+      const qReels = parseInt(document.getElementById('sliderReels').value);
+      const qLedSound = parseInt(document.getElementById('sliderLedSound').value);
+      const qBanners = parseInt(document.getElementById('sliderBanners').value);
+      const qVideo = parseInt(document.getElementById('sliderVideo').value);
+      const qAnimators = parseInt(document.getElementById('sliderAnimators').value);
+      const qStreaming = parseInt(document.getElementById('sliderStreaming').value);
+      const qGoodies = parseInt(document.getElementById('sliderGoodies').value);
+      const dPct = parseInt(document.getElementById('sliderDiscount').value) || 0;
+
+      const isIdentity = document.getElementById('checkIdentity').checked;
+      const isWebsite = document.getElementById('checkWebsite').checked;
+      marketingState.identity = isIdentity;
+      marketingState.website = isWebsite;
+
+      const activeCfg = cfg[currentView];
+
+      // Dynamic Attendee Pricing Logic
+      if (currentView === 'client') {
+        if (qA <= 1000) activeCfg.attendees = 100;
+        else if (qA <= 5000) activeCfg.attendees = 40;
+        else activeCfg.attendees = 30;
+      }
+      const attInput = document.getElementById('cfgAttendees');
+      if (attInput) attInput.value = activeCfg.attendees;
+
+      // Calculate BOTH totals for profit tracking
+      const getAttPrice = (view, qty) => {
+        if (view === 'client') {
+          if (qty <= 1000) return 100;
+          if (qty <= 5000) return 40;
+          return 30;
+        }
+        return cfg.internal.attendees;
+      };
+
+      const calcTotal = (view) => {
+        const p = cfg[view];
+        const a = getAttPrice(view, qA);
+        // Multiplied by days: Hosts, PCs, Printers, LED Sound, Video, Streaming
+        return (qA * a) + (qH * p.hosts * qD) + (qP * p.pcs * qD) + (qPr * p.printers * qD) + 
+               (qB * p.badges) + (qV * p.vip) + 
+               (qDigital * p.digital) + (isIdentity ? p.identity : 0) + (isWebsite ? p.website : 0) +
+               (qPodcasts * p.podcasts) + (qReels * p.reels) +
+               (qLedSound * p.ledSound * qD) + (qBanners * p.banners) + 
+               (qVideo * p.video * qD) + (qAnimators * p.animators) + 
+               (qStreaming * p.streaming * qD) + (qGoodies * p.goodies);
+      };
+
+      const calcLogistics = (view) => {
+        const l = logisticsCfg[view];
+        if (!l.isRemote) return 0;
+        return l.transport + (l.staffCount * qD * (l.accommodation + l.meals));
+      };
+
+      // net Client subtotal
+      const subtotalClient = calcTotal('client') + calcLogistics('client');
+      // net Internal cost subtotal
+      const subtotalInternal = calcTotal('internal') + calcLogistics('internal');
+
+      // Discount is only applied to the Client Quote
+      const discountClient = subtotalClient * (dPct / 100);
+      const netClient = subtotalClient - discountClient;
+      const taxClient = netClient * 0.19;
+      const finalClient = netClient + taxClient;
+
+      // Internal has 19% tax too
+      const taxInternal = subtotalInternal * 0.19;
+      const finalInternal = subtotalInternal + taxInternal;
+
+      const subtotal = currentView === 'client' ? subtotalClient : subtotalInternal;
+      const discount = currentView === 'client' ? discountClient : 0;
+      const net = subtotal - discount;
+      const tax = net * 0.19;
+      const total = net + tax;
+
+      // Net profit before tax (financial standard)
+      const profit = netClient - subtotalInternal;
+      const margin = netClient > 0 ? Math.round((profit / netClient) * 100) : 0;
+
+      const subA = qA * getAttPrice(currentView, qA);
+      const subH = qH * activeCfg.hosts * qD;
+      const subP = qP * activeCfg.pcs * qD;
+      const subPr = qPr * activeCfg.printers * qD;
+      const subB = qB * activeCfg.badges;
+      const subV = qV * activeCfg.vip;
+      const subDigital = qDigital * activeCfg.digital;
+      const subIdentity = isIdentity ? activeCfg.identity : 0;
+      const subWebsite = isWebsite ? activeCfg.website : 0;
+      const subPodcasts = qPodcasts * activeCfg.podcasts;
+      const subReels = qReels * activeCfg.reels;
+      const subLedSound = qLedSound * activeCfg.ledSound * qD;
+      const subBanners = qBanners * activeCfg.banners;
+      const subVideo = qVideo * activeCfg.video * qD;
+      const subAnimators = qAnimators * activeCfg.animators;
+      const subStreaming = qStreaming * activeCfg.streaming * qD;
+      const subGoodies = qGoodies * activeCfg.goodies;
+
+      // Sync inputs
+      const activeEl = document.activeElement;
+      const sync = (id, val) => { if (activeEl.id !== id) document.getElementById(id).value = val; };
+      sync('valDays', qD); sync('valAttendees', qA); sync('valHosts', qH); sync('valPCs', qP);
+      sync('valPrinters', qPr); sync('valBadges', qB); sync('valVip', qV);
+      sync('valDigital', qDigital); sync('valPodcasts', qPodcasts); sync('valReels', qReels);
+      sync('valLedSound', qLedSound); sync('valBanners', qBanners); sync('valVideo', qVideo);
+      sync('valAnimators', qAnimators); sync('valStreaming', qStreaming); sync('valGoodies', qGoodies);
+      sync('valDiscount', dPct);
+
+      // Animate Subtotals
+      animateValue('subAttendees', subA); animateValue('subHosts', subH); animateValue('subPCs', subP);
+      animateValue('subPrinters', subPr); animateValue('subBadges', subB); animateValue('subVip', subV);
+      animateValue('subDigital', subDigital); animateValue('subPodcasts', subPodcasts);
+      animateValue('subReels', subReels);
+      animateValue('subLedSound', subLedSound); animateValue('subBanners', subBanners);
+      animateValue('subVideo', subVideo); animateValue('subAnimators', subAnimators);
+      animateValue('subStreaming', subStreaming); animateValue('subGoodies', subGoodies);
+
+      // Labels
+      const t = translations[currentLang];
+      document.getElementById('priceAttendees').textContent = getAttPrice(currentView, qA).toLocaleString('fr-DZ') + ' ' + t.unitPerson;
+      document.getElementById('priceHosts').textContent = activeCfg.hosts.toLocaleString('fr-DZ') + ' ' + t.unitPerson;
+      document.getElementById('pricePCs').textContent = activeCfg.pcs.toLocaleString('fr-DZ') + ' ' + t.unitUnit;
+      document.getElementById('pricePrinters').textContent = activeCfg.printers.toLocaleString('fr-DZ') + ' ' + t.unitUnit;
+      document.getElementById('priceBadges').textContent = activeCfg.badges.toLocaleString('fr-DZ') + ' ' + t.unitBadge;
+      document.getElementById('priceVip').textContent = activeCfg.vip.toLocaleString('fr-DZ') + ' ' + t.unitVip;
+      document.getElementById('priceDigital').textContent = activeCfg.digital.toLocaleString('fr-DZ') + ' DZD / pkg';
+      document.getElementById('pricePodcasts').textContent = activeCfg.podcasts.toLocaleString('fr-DZ') + ' DZD / ep';
+      document.getElementById('priceReels').textContent = activeCfg.reels.toLocaleString('fr-DZ') + ' DZD / unit';
+      document.getElementById('priceLedSound').textContent = activeCfg.ledSound.toLocaleString('fr-DZ') + ' DZD / sqm';
+      document.getElementById('priceBanners').textContent = activeCfg.banners.toLocaleString('fr-DZ') + ' DZD / unit';
+      document.getElementById('priceVideo').textContent = activeCfg.video.toLocaleString('fr-DZ') + ' DZD / day';
+      document.getElementById('priceAnimators').textContent = activeCfg.animators.toLocaleString('fr-DZ') + ' DZD / unit';
+      document.getElementById('priceStreaming').textContent = activeCfg.streaming.toLocaleString('fr-DZ') + ' DZD / day';
+
+      // Summary
+      document.getElementById('lqAttendees').textContent = '×' + qA.toLocaleString('fr-DZ');
+      document.getElementById('lqHosts').textContent = '×' + qH + (qD > 1 ? ` (${qD} ${t.unitDays})` : '');
+      document.getElementById('lqPCs').textContent = '×' + qP + (qD > 1 ? ` (${qD} ${t.unitDays})` : '');
+      document.getElementById('lqPrinters').textContent = '×' + qPr + (qD > 1 ? ` (${qD} ${t.unitDays})` : '');
+      document.getElementById('lqBadges').textContent = '×' + qB.toLocaleString('fr-DZ');
+      document.getElementById('lqVip').textContent = '×' + qV.toLocaleString('fr-DZ');
+      document.getElementById('lqDigital').textContent = '×' + qDigital;
+      document.getElementById('lqPodcasts').textContent = '×' + qPodcasts;
+      document.getElementById('lqReels').textContent = '×' + qReels;
+      document.getElementById('lqLedSound').textContent = '×' + qLedSound + (qD > 1 ? ` (${qD} ${t.unitDays})` : '');
+      document.getElementById('lqBanners').textContent = '×' + qBanners;
+      document.getElementById('lqVideo').textContent = '×' + qVideo + (qD > 1 ? ` (${qD} ${t.unitDays})` : '');
+      document.getElementById('lqAnimators').textContent = '×' + qAnimators;
+      document.getElementById('lqStreaming').textContent = '×' + qStreaming + (qD > 1 ? ` (${qD} ${t.unitDays})` : '');
+      document.getElementById('lqGoodies').textContent = '×' + qGoodies.toLocaleString('fr-DZ');
+
+      animateValue('laAttendees', subA); animateValue('laHosts', subH); animateValue('laPCs', subP);
+      animateValue('laPrinters', subPr); animateValue('laBadges', subB); animateValue('laVip', subV);
+      animateValue('laDigital', subDigital);
+      animateValue('laIdentity', subIdentity); animateValue('laWebsite', subWebsite);
+      animateValue('laPodcasts', subPodcasts); animateValue('laReels', subReels);
+      animateValue('laLedSound', subLedSound); animateValue('laBanners', subBanners);
+      animateValue('laVideo', subVideo); animateValue('laAnimators', subAnimators);
+      animateValue('laStreaming', subStreaming); animateValue('laGoodies', subGoodies);
+
+      const items = ['Attendees', 'Hosts', 'PCs', 'Printers', 'Badges', 'Vip', 'Digital', 'Identity', 'Website', 'Podcasts', 'Reels', 'LedSound', 'Banners', 'Video', 'Animators', 'Streaming', 'Goodies'];
+      const qtys = [qA, qH, qP, qPr, qB, qV, qDigital, isIdentity ? 1 : 0, isWebsite ? 1 : 0, qPodcasts, qReels, qLedSound, qBanners, qVideo, qAnimators, qStreaming, qGoodies];
+      items.forEach((k, i) => document.getElementById('li' + k).classList.toggle('hidden', qtys[i] === 0));
+
+      // Totals
+      animateValue('subtotalAmount', subtotal);
+      
+      const discountRow = document.getElementById('discountRow');
+      if (discountRow) {
+        if (discount > 0) {
+          discountRow.classList.remove('hidden');
+          document.getElementById('txtDiscountLabel').textContent = `${t.discount} (${dPct}%)`;
+          animateValue('discountAmount', -discount);
+        } else {
+          discountRow.classList.add('hidden');
+        }
+      }
+      
+      animateValue('taxAmount', tax);
+      animateValue('totalAmount', total);
+      document.getElementById('valProfit').textContent = profit.toLocaleString('fr-DZ') + ' DZD';
+      document.getElementById('marginLabel').textContent = `${t.margin}: ${margin}%`;
+
+      // Track fills
+      const ids = ['Days', 'Attendees', 'Hosts', 'PCs', 'Printers', 'Badges', 'Vip', 'Digital', 'Podcasts', 'Reels', 'LedSound', 'Banners', 'Video', 'Animators', 'Streaming', 'Goodies', 'Discount'];
+      ids.forEach(id => {
+        const slider = document.getElementById('slider' + id);
+        if (slider) {
+          const pct = setTrack(slider);
+          updateBar('bar' + id, pct);
+        }
+      });
+
+      const log = logisticsCfg[currentView];
+      log.staffCount = parseInt(document.getElementById('valStaffCount').value) || 1;
+      log.transport = parseFloat(document.getElementById('valTransport').value) || 0;
+      log.accommodation = parseFloat(document.getElementById('valAccommodation').value) || 0;
+      log.meals = parseFloat(document.getElementById('valMeals').value) || 0;
+      log.isRemote = document.getElementById('checkRemote').checked;
+
+      const logTotal = calcLogistics(currentView);
+      document.getElementById('liLogistics').classList.toggle('hidden', logTotal === 0);
+      animateValue('laLogistics', logTotal);
+    }
+
+    // ── LISTENERS ───────────────────────────────────────────
+    const allItems = ['Days', 'Attendees', 'Hosts', 'PCs', 'Printers', 'Badges', 'Vip', 'Digital', 'Identity', 'Website', 'Podcasts', 'Reels', 'LedSound', 'Banners', 'Video', 'Animators', 'Streaming', 'Goodies'];
+    
+    // Pricing Config
+    allItems.slice(1).forEach(id => {
+      const el = document.getElementById('cfg' + id);
+      if (el) el.addEventListener('input', function() {
+        const key = id.charAt(0).toLowerCase() + id.slice(1);
+        cfg[currentView][key] = parseFloat(this.value) || 0;
+        update();
+      });
+    });
+
+    // Sliders & Values
+    ['Days', 'Attendees', 'Hosts', 'PCs', 'Printers', 'Badges', 'Vip', 'Digital', 'Podcasts', 'Reels', 'LedSound', 'Banners', 'Video', 'Animators', 'Streaming', 'Goodies', 'Discount'].forEach(id => {
+      const slider = document.getElementById('slider' + id);
+      const valInput = document.getElementById('val' + id);
+      if (slider) slider.addEventListener('input', update);
+      if (valInput) valInput.addEventListener('input', function() {
+        if (slider) slider.value = this.value;
+        update();
+      });
+    });
+
+
+    // ── PRINT ───────────────────────────────────────────────
+    function printQuote() {
+      window.print();
+    }
+
+    // ── WOW EFFECTS: PARTICLES & ANIMATIONS ──────────────────
+    class Particles {
+      constructor() {
+        this.canvas = document.getElementById('particles-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.particles = [];
+        this.resize();
+        this.init();
+        this.animate();
+        window.addEventListener('resize', () => this.resize());
+      }
+
+      resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+      }
+
+      init() {
+        for (let i = 0; i < 50; i++) {
+          this.particles.push({
+            x: Math.random() * this.canvas.width,
+            y: Math.random() * this.canvas.height,
+            size: Math.random() * 2 + 1,
+            speedX: Math.random() * 0.5 - 0.25,
+            speedY: Math.random() * 0.5 - 0.25,
+            opacity: Math.random() * 0.5
+          });
+        }
+      }
+
+      animate() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        const isLight = document.body.classList.contains('light-mode');
+        const color = isLight ? '43, 127, 255' : '255, 255, 255';
+
+        this.particles.forEach(p => {
+          p.x += p.speedX;
+          p.y += p.speedY;
+
+          if (p.x < 0 || p.x > this.canvas.width) p.speedX *= -1;
+          if (p.y < 0 || p.y > this.canvas.height) p.speedY *= -1;
+
+          this.ctx.beginPath();
+          this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          this.ctx.fillStyle = `rgba(${color}, ${p.opacity})`;
+          this.ctx.fill();
+        });
+        requestAnimationFrame(() => this.animate());
+      }
+    }
+
+    // Smooth Counter Animation
+    const counters = new Map();
+    const activeAnimations = new Map();
+    function animateValue(id, endValue, duration = 400) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      
+      const startValue = counters.get(id) || 0;
+      if (startValue === endValue) return;
+      
+      if (activeAnimations.has(id)) {
+        cancelAnimationFrame(activeAnimations.get(id));
+      }
+      
+      const startTime = performance.now();
+      
+      function updateCounter(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function (outQuart)
+        const ease = 1 - Math.pow(1 - progress, 4);
+        
+        const currentValue = Math.floor(startValue + (endValue - startValue) * ease);
+        counters.set(id, currentValue);
+        
+        if (id === 'totalAmount') {
+          el.innerHTML = currentValue.toLocaleString('fr-DZ') + ' <span>DZD</span>';
+        } else {
+          el.textContent = fmt(currentValue);
+        }
+        
+        if (progress < 1) {
+          const animId = requestAnimationFrame(updateCounter);
+          activeAnimations.set(id, animId);
+        } else {
+          counters.set(id, endValue);
+          activeAnimations.delete(id);
+        }
+      }
+      
+      const animId = requestAnimationFrame(updateCounter);
+      activeAnimations.set(id, animId);
+    }
+
+    // Magnetic Button Effect
+    const magneticBtns = document.querySelectorAll('.btn-print, .top-controls button, .view-selector button');
+    
+    magneticBtns.forEach(btn => {
+      btn.classList.add('btn-magnetic');
+      btn.addEventListener('mousemove', (e) => {
+        const rect = btn.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        
+        btn.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px) translateY(${btn.classList.contains('active') ? '0' : '-1px'})`;
+      });
+      
+      btn.addEventListener('mouseleave', () => {
+        btn.style.transform = '';
+      });
+    });
+
+    // Initialize Wow effects
+    new Particles();
+
+    update();
+  </script>
+
+</body>
+
+</html>
