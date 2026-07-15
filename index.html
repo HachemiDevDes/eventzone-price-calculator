@@ -115,6 +115,9 @@
       flex: 1;
       position: sticky;
       top: 24px;
+      max-height: calc(100vh - 48px);
+      display: flex;
+      flex-direction: column;
     }
 
     @media (max-width: 900px) {
@@ -608,7 +611,8 @@
       padding: 32px;
       margin-bottom: 16px;
       position: relative;
-      overflow: hidden;
+      overflow-y: auto;
+      flex: 1;
     }
 
     @media (max-width: 600px) {
@@ -939,26 +943,40 @@
         display: none !important;
       }
 
+      .header {
+        display: block !important;
+        margin-bottom: 24px !important;
+      }
+
+      .logo {
+        float: left !important;
+      }
+
+      .logo img {
+        margin: 0 !important;
+        filter: none !important;
+      }
+
+      .print-title {
+        display: block !important;
+        float: right !important;
+        text-align: right !important;
+        color: #111 !important;
+        font-size: 32px !important;
+        font-weight: 700 !important;
+        margin: 0 !important;
+        line-height: 1 !important;
+      }
+
       .company-details {
+        clear: both !important;
         text-align: left !important;
         font-size: 11px !important;
         color: #333 !important;
         border-bottom: 1px solid #dde2ef !important;
         padding-bottom: 16px !important;
-        margin-bottom: 24px !important;
-      }
-
-      .header {
-        text-align: left !important;
-        margin-bottom: 24px !important;
-      }
-
-      .logo img {
-        margin: 0 0 16px 0 !important;
-      }
-
-      .logo img {
-        filter: none !important;
+        padding-top: 20px !important;
+        margin-bottom: 0 !important;
       }
 
       .logo-name {
@@ -971,14 +989,6 @@
 
       .screen-title {
         display: none !important;
-      }
-
-      .print-title {
-        display: block !important;
-        color: #111 !important;
-        font-size: 32px !important;
-        font-weight: 700 !important;
-        margin-bottom: 8px !important;
       }
 
       h1 em {
